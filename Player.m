@@ -78,7 +78,7 @@ classdef Player
             % Increment counter and store last move
             obj.LastGame = obj.LastGame + 1;
             if obj.LastGame > length(obj.PayoffHistory)
-                obj.PayoffHistory = [obj.PayoffHistory,zeros(obj.intArrayLength,1)];
+                obj.PayoffHistory = [obj.PayoffHistory;zeros(obj.intArrayLength,1)];
             end
             obj.LastMovePlayed = Move;
         end
