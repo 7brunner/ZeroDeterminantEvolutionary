@@ -13,6 +13,7 @@ classdef Game
     properties
         Payoffs1
         Payoffs2
+        Population
     end
     
     methods
@@ -76,6 +77,45 @@ classdef Game
                 [Player1,Player2] = playRound(obj,Player1,Player2);
             end
         end
+        
+        %% Create population method
+        % Creates a population of agents of different classes
+        function obj = createPopulation(obj,PopulationSize,varargin)
+            %%%
+            % Inputs: Populationsize and value pairs of player type and
+            % shares
+            PlayerTypes = varargin(1:2:end-1);
+            PlayerShares = cell2mat(varargin(2:2:end));
+            PlayerShares = PlayerShares / sum(PlayerShares);
+            PlayerShares = cumsum(PlayerShares);
+            
+            intPlayerType = 1;
+            strPlayerType = PlayerTypes{1};
+            
+            %%%
+            % Create population in loop by rounding respective shares
+            Population = cell(PopulationSize,1);
+            
+            for i = 1:PopulationSize
+                
+                if i == round(PopulationSize*PlayerShares(intPlayerType)) + 1
+                    intPlayerType = intPlayerType + 1;
+                    strPlayerType = PlayerTypes{intPlayerType};
+                end
+                
+                Population{i} = eval([strPlayerType]);
+            end
+            
+            obj.Population = Population;
+        end
+        
+        %% Run tournament
+        % Loop over all players and match them with random opponent
+        
+        %% Create next generation
+        % Store share and average scores of each player type in current
+        % generation and sample new generation with probablity proportional
+        % to average score
     end
     
 end
