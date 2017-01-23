@@ -1,18 +1,25 @@
 %% Player class
+% General class for 1-memory player.
+% Constructor inputs:
+% 
+% * Strategy: 2x2 matrix of probabilities depending on last move (cc, cd,
+% dc, dd)
+% * Initialstrategy: Strategy played at first move. 0 (cooperate) or 1 (defect)
+% 
 
 classdef Player
     
     properties
-        PayoffHistory
-        AveragePayoffHistory
-        LastGame
+        PayoffHistory   % Nx1 vector of payoffs per game
+        AveragePayoffHistory % Nx1 vector of cumulated average payoff
+        LastGame        % integer, last used entry of History vector
         LastMovePlayed  % 0 = cooperate, 1 = defect
         Strategy        % 2x2 matrix (cc, dc, cd, dd)
         InitialStrategy % 0 = cooperate, 1 = defect
     end
     
     properties(Access = protected)
-        intArrayLength = 1000;
+        intArrayLength = 1000; % Determine the size by which the history vector grows
     end
     
     methods
@@ -49,6 +56,8 @@ classdef Player
         end
         
         %% Play move method
+        % Output the next move according to strategy and opponent's last
+        % move
         function [obj,Move] = playMove(obj,LastMoveOpponent)
             %%%
             % Validate inputs
