@@ -16,9 +16,9 @@ classdef Game
         Population      % cell array of players
         MatchingType    % string either Random, Close or Far
         PlayerTypes     % cell array of player types
-        PopulationShareHistory
-        PlayerTypeAvgFitnessHistory
-        LastGeneration
+        PopulationShareHistory % nxk array of n generations for k player types
+        PlayerTypeAvgPayoffHistory % nxk array of n generations for k player types
+        LastGeneration  % integer
     end
     
     methods
@@ -122,14 +122,15 @@ classdef Game
                     strPlayerType = PlayerTypes{intPlayerType};
                 end
                 
-                Population{i} = eval([strPlayerType]);
+                NewPlayer = eval([strPlayerType]);
+                NewPlayer.PlayerTypeConstructorCall = strPlayerType;
+                Population{i} = NewPlayer;
             end
                         
             obj.Population = Population;
             
             %%%
-            % Store class names of player types
-            PlayerTypes = cellfun(@(x) x(1:(strfind(x,'(')-1)),PlayerTypes,'UniformOutput',false);
+            % Store constructor calls of player types
             obj.PlayerTypes = PlayerTypes;
         end
         
@@ -168,7 +169,7 @@ classdef Game
             %%%
             % Create vectors containing history 
             obj.PopulationShareHistory = nan(NGenerations,length(obj.PlayerTypes));
-            obj.PlayerTypeAvgFitnessHistory = nan(NGenerations,length(obj.PlayerTypes));
+            obj.PlayerTypeAvgPayoffHistory = nan(NGenerations,length(obj.PlayerTypes));
             
             %%%
             % Loop over generations
@@ -186,37 +187,61 @@ classdef Game
         % to average score
         function obj = createNextGeneration(obj)
             obj.LastGeneration = obj.LastGeneration + 1;
-            PlayerClasses = cellfun(@class,obj.Population(:,1),'UniformOutput',false);
-            AvgFitnesses = cellfun(@(x) x.AveragePayoffHistory(end),obj.Population);
+            ConstructorCalls = cellfun(@(x) x.PlayerTypeConstructorCall,obj.Population(:,1),'UniformOutput',false);
+            Payoffs = cellfun(@(x) x.AveragePayoff,obj.Population);
+            if any(isnan(Payoffs))
+                warning('NaN in Payoffs')
+                Payoffs(isnan(Payoffs)) = 0;
+            end
+            AvgPayoff = mean(Payoffs);
+            
+            NewFullConstructorCall = cell(1,length(obj.PlayerTypes)*2);
             
             for i = 1:length(obj.PlayerTypes)
                 %%%
                 % Store shares of player type
                 strPlayerType = obj.PlayerTypes{i};
-                pos = ismember(PlayerClasses,strPlayerType);
-                obj.PopulationShareHistory(obj.LastGeneration,i) = ...
-                    sum(pos) / length(obj.Population(:,1));
+                pos = ismember(ConstructorCalls,strPlayerType);
+                PopulationShare = sum(pos) / length(obj.Population(:,1));
+                obj.PopulationShareHistory(obj.LastGeneration,i) = PopulationShare;
                 
                 %%%
                 % Store average fitness of player type
-                obj.PlayerTypeAvgFitnessHistory(obj.LastGeneration,i) = ...
-                    mean(AvgFitnesses(pos));
+                PlayerTypeAvgPayoff = mean(Payoffs(pos));
+                obj.PlayerTypeAvgPayoffHistory(obj.LastGeneration,i) = PlayerTypeAvgPayoff;
+                
+                %%%
+                % Discrete-time replicator dynamics for new population
+                % shares. For reference see e.g. Bauso (2016) p. 80
+                NewShare = PopulationShare * (1 + (PlayerTypeAvgPayoff - AvgPayoff)/AvgPayoff);
+                
+                %%%
+                % Enter player type and new player shares into new
+                % constructor call
+                NewFullConstructorCall{i*2-1} = strPlayerType;
+                NewFullConstructorCall{i*2} = NewShare;
             end
             
             %%%
-            % Sample new population and reset player history
-            NewPopulation = cell(size(obj.Population));
-            SelectionProbability = cumsum(AvgFitnesses/sum(AvgFitnesses));
-            for i = 1:length(obj.Population(:,1))
-                newLoc = find(SelectionProbability<rand(),1,'last');
-                if isempty(newLoc); newLoc = 1; end
-                NewPopulation{i,:} = obj.Population{newLoc,:};
-                NewPlayer = NewPopulation{i,1};
-                NewPlayer = NewPlayer.resetHistory;
-                NewPopulation{i,1} = NewPlayer;
-            end
+            % Create new population with the newly constructed call (same
+            % player types, new shares
+            obj = createPopulation(obj,length(obj.Population),NewFullConstructorCall{:});
             
-            obj.Population = NewPopulation;
+            
+%             %%%
+%             % Sample new population and reset player history
+%             NewPopulation = cell(size(obj.Population));
+%             SelectionProbability = cumsum(Payoffs/sum(Payoffs));
+%             for i = 1:length(obj.Population(:,1))
+%                 newLoc = find(SelectionProbability<rand(),1,'last');
+%                 if isempty(newLoc); newLoc = 1; end
+%                 NewPopulation{i,:} = obj.Population{newLoc,:};
+%                 NewPlayer = NewPopulation{i,1};
+%                 NewPlayer = NewPlayer.resetHistory;
+%                 NewPopulation{i,1} = NewPlayer;
+%             end
+%             
+%             obj.Population = NewPopulation;
         end
     end
     

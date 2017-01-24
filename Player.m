@@ -12,10 +12,12 @@ classdef Player
     properties
         PayoffHistory   % Nx1 vector of payoffs per game
         AveragePayoffHistory % Nx1 vector of cumulated average payoff
+        AveragePayoff   % If only the last value is needed
         LastGame        % integer, last used entry of History vector
         LastMovePlayed  % 0 = cooperate, 1 = defect
         Strategy        % 2x2 matrix (cc, dc, cd, dd)
         InitialStrategy % 0 = cooperate, 1 = defect
+        PlayerTypeConstructorCall % Is set by generatePopulation method
     end
     
     properties(Access = protected)
@@ -88,6 +90,13 @@ classdef Player
             PayoffHistoryShort = obj.PayoffHistory(1:obj.LastGame);
             CumulativePayoffs = cumsum(PayoffHistoryShort);
             AveragePayoffHistory = CumulativePayoffs ./ [1:length(CumulativePayoffs)]';
+        end
+        
+        %% Get-method for average payoff
+        % If only the last payoff value is needed
+        function AveragePayoff = get.AveragePayoff(obj)
+            SumPayoffs = sum(obj.PayoffHistory(1:obj.LastGame));
+            AveragePayoff = SumPayoffs / obj.LastGame;
         end
         
         %% Reset history method
