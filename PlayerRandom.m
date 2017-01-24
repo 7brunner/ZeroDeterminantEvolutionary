@@ -7,7 +7,7 @@ classdef PlayerRandom < Player
         %% Constructor
         % Pass random values to superclass constructor
         function obj = PlayerRandom()
-            obj = obj@Player(random(2),round(random()));
+            obj = obj@Player(ones(2)*0.5,0);
         end
     end
     
