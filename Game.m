@@ -191,9 +191,14 @@ classdef Game
             
             %%%
             % Loop over generations
-            for i = 1:NGenerations
+            blnConvergence = false;
+            iGeneration = 1;
+            while ~blnConvergence
                 obj = runOneGenerationTournament(obj,RoundsPerGeneration);
-                obj = createNextGeneration(obj);
+                [obj,blnConvergence] = createNextGeneration(obj);
+                if iGeneration == NGenerations
+                    blnConvergence = true;
+                end
             end
         end
         
@@ -216,7 +221,7 @@ classdef Game
         % Store share and average scores of each player type in current
         % generation and sample new generation with probablity proportional
         % to average score
-        function obj = createNextGeneration(obj)
+        function [obj,blnConvergence] = createNextGeneration(obj)
             obj.LastGeneration = obj.LastGeneration + 1;
             ConstructorCalls = cellfun(@(x) x.PlayerTypeConstructorCall,obj.Population(:,1),'UniformOutput',false);
             Payoffs = cellfun(@(x) x.AveragePayoff,obj.Population);
@@ -228,6 +233,8 @@ classdef Game
             
             NewFullConstructorCall = cell(1,length(obj.PlayerTypes)*2);
             
+            blnConvergence = false;
+            
             for i = 1:length(obj.PlayerTypes)
                 %%%
                 % Store shares of player type
@@ -235,6 +242,12 @@ classdef Game
                 pos = ismember(ConstructorCalls,strPlayerType);
                 PopulationShare = sum(pos) / length(obj.Population(:,1));
                 obj.PopulationShareHistory(obj.LastGeneration,i) = PopulationShare;
+                
+                %%%
+                % Convergence if one player type has 100% share
+                if PopulationShare == 1
+                    blnConvergence = true;
+                end
                 
                 %%%
                 % Store average fitness of player type
