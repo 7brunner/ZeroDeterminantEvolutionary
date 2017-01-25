@@ -199,6 +199,7 @@ classdef Game
                 if iGeneration == NGenerations
                     blnConvergence = true;
                 end
+                iGeneration = iGeneration + 1;
             end
         end
         
