@@ -19,6 +19,10 @@ classdef Game
         PopulationShareHistory % nxk array of n generations for k player types
         PlayerTypeAvgPayoffHistory % nxk array of n generations for k player types
         LastGeneration  % integer
+        DoParallelComputation % Boolean. About 50% performance improvement 
+        % (linear over the tested values). Cannot store the results for
+        % matched opponents for technical reasons (ie only half as many
+        % played games are stored in each generation)
     end
     
     methods
@@ -73,6 +77,7 @@ classdef Game
             end
             
             obj.LastGeneration = 0;
+            obj.DoParallelComputation = false;
         end
         
         %% Play one round method
@@ -138,13 +143,26 @@ classdef Game
         % Loop over all players and match them with opponent according to
         % defined matching type
         function obj = runOneGenerationTournament(obj,RoundsToPlay)
-            for i = 1:length(obj.Population(:,1))
-                Player1 = obj.Population{i,1};
-                [Player2,locPlayer2] = obj.matchOpponent(i);
-                [Player1,Player2] = playNRounds(obj,RoundsToPlay,Player1,Player2);
-                
-                obj.Population{i,1} = Player1;
-                obj.Population{locPlayer2,1} = Player2;
+            if obj.DoParallelComputation
+                Population = obj.Population;
+                NewPopulation = cell(size(Population));
+                parfor i = 1:length(obj.Population(:,1))
+                    Player1 = Population{i,1};
+                    Player2 = obj.matchOpponent(i);
+                    Player1 = playNRounds(obj,RoundsToPlay,Player1,Player2);
+
+                    NewPopulation{i,1} = Player1;
+                end
+                obj.Population = NewPopulation;
+            else
+                for i = 1:length(obj.Population(:,1))
+                    Player1 = obj.Population{i,1};
+                    [Player2,locPlayer2] = obj.matchOpponent(i);
+                    [Player1,Player2] = playNRounds(obj,RoundsToPlay,Player1,Player2);
+
+                    obj.Population{i,1} = Player1;
+                    obj.Population{locPlayer2,1} = Player2;
+                end
             end
         end
         
