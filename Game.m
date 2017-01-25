@@ -178,6 +178,19 @@ classdef Game
                 obj = createNextGeneration(obj);
             end
         end
+        
+        %% Plot population history method
+        function plotPopulationHistory(obj,Title)
+            figure
+            subplot(2,1,1)
+            plot(obj.PopulationShareHistory)
+            title([Title ' - Population shares'])
+
+            subplot(2,1,2)
+            plot(obj.PlayerTypeAvgPayoffHistory)
+            legend(obj.PlayerTypes,'Location','southoutside')
+            title('Average payoffs per player type')
+        end
     end
     
     methods(Access = protected)
